@@ -98,7 +98,7 @@ class ConfigLoader(DispatchProcessor):
 	except NameError:
 	    self.log.error("Part of %s not able to be evaluated." %
 	                   buffer)
-	    # eat exception here, let expression, clause and atom deal
+	    # eat exception here, let expression and atom deal
 	    # with undefined variables in more Pythonic terms
 	    result = None
 
@@ -180,14 +180,3 @@ if __name__ == '__main__':
     log.addHandler(handler)
 
     loader = ConfigLoader(log=log)
-
-    # for var_eval, this will probably meld somehow into the population
-    # of hashes from yamls
-    # see http://effbot.org/zone/librarybook-core-eval.htm for more ideas
-    #scrubbed_env = {"__builtins__": {}}
-
-    env = 'iamqa'
-
-    parser.parse("ENV.bleh.$env", processor=loader);
-
-    print "loader value = %s" % loader.value

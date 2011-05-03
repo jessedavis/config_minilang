@@ -1,182 +1,106 @@
 #!/usr/bin/env python
 
+"""
+"""
+
+import ConfigParser
 import logging
+from optparse import OptionParser
+import os
+import sys
+
 import simpleparse
-from simpleparse.common import strings, numbers
-from simpleparse.dispatchprocessor import *
+import yaml
 
 import config_grammar
+from config_loader import ConfigLoader
 
-class ConfigLoader(DispatchProcessor):
-    """Parses the expression and returns back a value if it can be 
-       resolved."""
-
-    value = None
-    log = None
-    env_vars = {}
-
-    def __init__(self, log=None, env_vars=None, *args, **kwargs):
-	#super(self.__class__, self).__init__(*args, **kwargs)
-
-	if log is None:
-	    self.log = logging.getLogger(self.__class__.__name__)
-	else:
-	    self.log = log
-
-	# see http://stackoverflow.com/questions/423379/global-variables-in-python
-	# as to why we pass in our own vars
-	self.env_vars = env_vars
-
-    def expression(self, parseinfo, buffer):
-	tag, left, right, subtree = parseinfo
-	self.log.debug(("%s : buffer = %s, (start, end) = (%d, %d), "
-	               "subtree = %s") %
-	               (tag, buffer, left, right, subtree))
-        sub_exprs = dispatchList(self, subtree, buffer)
-
-	try:
-	    self.value = ''.join(sub_exprs)
-	except TypeError as e:
-	    # might want something less than error here, since we're
-	    # handling the error
-	    self.log.error("Error evaluating expression: %s" % e)
-	    self.value = None
-
-    def op(self, parseinfo, buffer):
-	tag, left, right, subtree = parseinfo
-	self.log.debug(("%s : buffer = %s, (start, end) = (%d, %d), "
-	               "subtree = %s") %
-	               (tag, buffer, left, right, subtree))
-	return dispatch(self, subtree[0], buffer)
-
-    def if_op(self, parseinfo, buffer):
-	tag, left, right, subtree = parseinfo
-	self.log.debug(("%s : buffer = %s, (start, end) = (%d, %d), "
-	               "subtree = %s") %
-	               (tag, buffer, left, right, subtree))
-
-	# TODO: work in a enum style return here
-	#
-	return '|'
-
-    def concat_op(self, parseinfo, buffer):
-	tag, left, right, subtree = parseinfo
-	self.log.debug(("%s : buffer = %s, (start, end) = (%d, %d), "
-	               "subtree = %s") %
-	               (tag, buffer, left, right, subtree))
-
-	# TODO: work in a enum style return here
-	#
-	return '+'
-
-    def atom(self, parseinfo, buffer):
-	tag, left, right, subtree = parseinfo
-	self.log.debug(("%s : buffer = %s, (start, end) = (%d, %d), "
-	               "subtree = %s") %
-	               (tag, buffer, left, right, subtree))
-	return dispatch(self, subtree[0], buffer)
-
-    def literal(self, parseinfo, buffer):
-	tag, left, right, subtree = parseinfo
-	self.log.debug(("%s : buffer = %s, (start, end) = (%d, %d), "
-	               "subtree = %s") %
-	               (tag, buffer, left, right, subtree))
-	return dispatch(self, subtree[0], buffer)
-
-    def variable(self, parseinfo, buffer):
-	tag, left, right, subtree = parseinfo
-	self.log.debug(("%s : buffer = %s, (start, end) = (%d, %d), "
-	               "subtree = %s") %
-	               (tag, buffer, left, right, subtree))
-
-	try:
-	    subvar_list = dispatchList(self, subtree, buffer)
-	    if len(subvar_list) == 1:
-		result =  subvar_list[0]
-	    else:
-		result = '.'.join(subvar_list)
-	except NameError:
-	    self.log.error("Part of %s not able to be evaluated." %
-	                   buffer)
-	    # eat exception here, let expression and atom deal
-	    # with undefined variables in more Pythonic terms
-	    result = None
-
-	return result
-
-    def var_part(self, parseinfo, buffer):
-	tag, left, right, subtree = parseinfo
-	self.log.debug(("%s : buffer = %s, (start, end) = (%d, %d), "
-	               "subtree = %s") %
-	               (tag, buffer, left, right, subtree))
-
-	result = None
-	try:
-	    varpart_list = dispatchList(self, subtree, buffer)
-	    if len(varpart_list) == 1:
-		result = varpart_list[0]
-	    else:
-		result = '.'.join(varpart_list)
-	except NameError:
-	    self.log.error("Part of %s not able to be evaluated." %
-	                   buffer)
-	    raise
-
-	return result
-	    
-    def var(self, parseinfo, buffer):
-	tag, left, right, subtree = parseinfo
-	self.log.debug(("%s : buffer = %s, (start, end) = (%d, %d), "
-	               "subtree = %s") %
-	               (tag, buffer, left, right, subtree))
-	return getString(parseinfo, buffer)
-
-    def var_eval(self, parseinfo, buffer):
-	tag, left, right, subtree = parseinfo
-	self.log.debug(("%s : buffer = %s, (start, end) = (%d, %d), "
-	               "subtree = %s") %
-	               (tag, buffer, left, right, subtree))
-
-	value = None
-	try:
-	    # peel off the $ in front of the variable
-	    value = eval(getString((tag, left + 1, right, subtree),
-	                           buffer), 
-	                 self.env_vars)
-	except NameError:
-	    self.log.error(("Unable to find value of %s in "
-	                   "current context.") %
-	                   buffer[left+1:right])
-	    raise
-	    
-	return value
-
-    def var_source(self, parseinfo, buffer):
-	tag, left, right, subtree = parseinfo
-	self.log.debug(("%s : buffer = %s, (start, end) = (%d, %d), "
-	               "subtree = %s") %
-	               (tag, buffer, left, right, subtree))
-
-	# TODO: may need to work env lookup somehow here
-	#
-	return getString(parseinfo, buffer)
-
-    def ws(self, parseinfo, buffer):
-	tag, left, right, subtree = parseinfo
-	return getString(parseinfo, buffer)
-
-
-if __name__ == '__main__':
-    parser = simpleparse.parser.Parser(config_grammar.config_minilang, 'root')
-
-    log = logging.getLogger("test")
-    log_level = logging.DEBUG
+def initialize_logging(logger_name='config_parser'):
+    log = logging.getLogger(logger_name)
+    log_level = logging.WARNING
 
     log.setLevel(log_level)
     handler = logging.StreamHandler()
-    handler.setLevel(log_level)
+    # send on everything
+    handler.setLevel(logging.NOTSET)
     log_format = "%(asctime)s - %(levelname)s: %(message)s"
     handler.setFormatter(logging.Formatter(log_format))
     log.addHandler(handler)
 
-    loader = ConfigLoader(log=log)
+    return log
+    
+def initialize_options(usage=None):
+    cfg = os.path.join(os.environ['HOME'], '.config_parser.cfg') 
+    parser = OptionParser()
+
+    parser.set_usage(usage)
+    parser.set_defaults(config_file=cfg)
+    parser.add_option("-f", "--cfg_file", action="store", type="string",
+		      dest="config_file", 
+		      help='Config file, default: $HOME/.config_parser.cfg')
+    parser.add_option("-d", dest="debug", action="store_true",
+                      help="Print debugging info.")
+    parser.add_option("-v", dest="verbose", action="store_true",
+                      help="Print extra logging info.")
+    parser.add_option("-q", dest="quiet", action="store_true",
+                      help="Print no logging info.")
+
+    return parser
+
+def read_yaml_files(filename):
+    config_section = 'file_locations'
+    yaml_values = {}
+
+    config = ConfigParser.ConfigParser()
+
+    # default is options are lowercased
+    # keep case sensitive because of our var source
+    config.optionxform = str
+
+    if filename not in config.read(filename):
+	log.warning("Error reading config file %s, skipping." % filename)
+	return yaml_values
+
+    if not config.has_section(config_section):
+	log.warning("No section %s in config file, skipping." % 
+	            config_section)
+	return yaml_values
+
+    for tag, yaml_file in config.items(config_section):
+	if not yaml_file.startswith(os.sep):
+	    yaml_file = os.path.join(os.getcwd(), yaml_file)
+
+	try: 
+	    with open(yaml_file) as f:
+		values_dict = yaml.load(f)
+		yaml_values[tag] = values_dict	
+
+	    log.info("Loaded YAML file, tag: %s, file: %s" %
+		      (tag, yaml_file))
+	except IOError as e: 
+	    log.error("Error parsing YAML file: %s" % e)
+		
+    return yaml_values	    	
+
+if __name__ == '__main__':
+
+    cli_options = initialize_options("usage: %prog [options] file")
+
+    (options, args) = cli_options.parse_args()
+    if len(args) != 1:
+	cli_options.error("No file to parse given.")
+
+    log = initialize_logging(logger_name=sys.argv[0])
+    
+    if options.debug:
+	log.setLevel(logging.DEBUG)
+    if options.verbose:
+	log.setLevel(logging.INFO)
+    if options.quiet:
+	log.setLevel(logging.ERROR)
+
+    yaml_values = read_yaml_files(options.config_file)
+
+    parser = simpleparse.parser.Parser(config_grammar.config_minilang, 
+	                               'root')
+    loader = ConfigLoader(log=log, env_vars=yaml_values)

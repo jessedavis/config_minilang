@@ -18,7 +18,7 @@ import sys
 sys.path.insert(0, '..')
 
 import config_grammar
-from config_parser import ConfigLoader
+from config_loader import ConfigLoader
 
 class test_config_parser(unittest.TestCase):
 
@@ -50,6 +50,14 @@ class test_config_parser(unittest.TestCase):
 	    self.parser.parse(string, processor=self.loader)
 	    self.assertEqual(string, self.loader.value)
 
+    def test_variable_source(self):
+	strings = { "ENV.bleh": "ENV",
+	            "ENVTOO.bleh.bluh": "ENVTOO",
+	}	
+	for string, env in strings.iteritems():
+	    self.parser.parse(string, processor=self.loader)
+	    self.assertEqual(env, self.loader.vars_section)
+
     @with_setup(setup, teardown)
     def test_eval_variables(self):
 	var = 'a'	
@@ -62,9 +70,9 @@ class test_config_parser(unittest.TestCase):
 
 	self.loader.env_vars = { 'var': 'a' }
 
-	for expression in expressions:
+	for expression, value in expressions.iteritems():
 	    self.parser.parse(expression, processor=self.loader)
-	    self.assertEqual(expressions[expression], self.loader.value)
+	    self.assertEqual(value, self.loader.value)
 
     @with_setup(setup, teardown)
     def test_eval_variable_error(self):
@@ -106,9 +114,9 @@ class test_config_parser(unittest.TestCase):
 	expressions = { "ENV.$var.bleh|www": "ENV.a.bleh|www", }	
 	self.loader.env_vars = { 'var': 'a' }
 
-	for expression in expressions:
+	for expression, value in expressions.iteritems():
 	    self.parser.parse(expression, processor=self.loader)
-	    self.assertEqual(expressions[expression], self.loader.value)
+	    self.assertEqual(value, self.loader.value)
 
     # might need to test later
     def test_ws(self):

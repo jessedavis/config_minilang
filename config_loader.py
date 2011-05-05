@@ -30,6 +30,24 @@ class ConfigLoader(DispatchProcessor):
 	# as to why we pass in our own vars
 	self.env_vars = env_vars
 
+    # override this to lookup values in other structures/services
+    # TODO: modify var_eval to use this or something similar somehow
+    def _resolve_value(self, subvalues_list):
+	cur = self.env_vars
+	result = None
+
+	for subvalue in subvalues_list:
+	    if subvalue in cur:
+		cur = cur[subvalue]
+	    if type(cur) is dict:
+		continue
+	    else:
+		result = cur	
+
+	return result
+
+    # let resolve_value determine how and from where we'll pull value
+    # let expression deal with operators
     def expression(self, parseinfo, buffer):
 	tag, left, right, subtree = parseinfo
 	self.log.debug(("%s : buffer = %s, (start, end) = (%d, %d), "
@@ -37,8 +55,16 @@ class ConfigLoader(DispatchProcessor):
 	               (tag, buffer, left, right, subtree))
         sub_exprs = dispatchList(self, subtree, buffer)
 
+	# need to go through variable and expression and convert
+	# to returning list
+
+	# probably need to accomodate list of lists because of variable
+	# and var_part
+
+	#print sub_exprs
+
 	try:
-	    self.value = ''.join(sub_exprs)
+	    self.value = self._resolve_value(sub_exprs[0].split('.'))
 	except TypeError as e:
 	    # might want something less than error here, since we're
 	    # handling the error
@@ -114,12 +140,7 @@ class ConfigLoader(DispatchProcessor):
 	               (tag, buffer, left, right, subtree))
 
 	result = None
-	try:
 	    varpart_list = dispatchList(self, subtree, buffer)
-	    if len(varpart_list) == 1:
-		result = varpart_list[0]
-	    else:
-		result = '.'.join(varpart_list)
 	except NameError:
 	    self.log.error("Part of %s not able to be evaluated." %
 	                   buffer)

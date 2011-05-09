@@ -20,35 +20,54 @@ sys.path.insert(0, '..')
 import config_grammar
 from config_loader import ConfigLoader
 
-class test_config_parser(unittest.TestCase):
+class test_config_loader(unittest.TestCase):
 
     parser = None
     loader = None
+    test_values = {}
 
     @classmethod
     def setUpClass(self):
 	self.parser = simpleparse.parser.Parser(config_grammar.config_minilang, 'root')
 	self.loader = ConfigLoader()
 
-    def setup(self):
-	pass
+    def setUp(self):
+	# self.loader.env_vars is a reference, sincy Python
+	# passes references-to-objects by value (i.e. pass by value, but
+	# everything's an object, and the value is a reference to the 
+	# object) - hence, always create a brancd new fixture for each
+	# test
+	self.loader.env_vars = dict({
+	    'ENV': { 
+		'qa': {
+		    'val': 'a',
+		},
+		'production': {
+		    'val': 'b',
+		},
+		'a': 'apple',
+	    },
+	    # TODO: future work to support $$var 
+	    # calling $var with var = a will print a, of course
+	    #'a': 'organicapple',
+	})
 
-    def teardown():
-	self.loader.env_vars = {}
+    def tearDown(self):
+	self.loader.env_vars.clear()
 
     @classmethod
     def tearDownAll(self):
 	pass
 
     def test_variable(self):
-	strings = [
-            "bleh",
-            "ENV.bleh",
-            "ENV.bleh.bluh",
-	]
-	for string in strings:
-	    self.parser.parse(string, processor=self.loader)
-	    self.assertEqual(string, self.loader.value)
+	variables = {
+            "hi": "hi",
+            "ENV.a": "apple",
+            "ENV.qa.val": "a",
+	}
+	for variable, value in variables.iteritems():
+	    self.parser.parse(variable, processor=self.loader)
+	    self.assertEqual(value, self.loader.value)
 
     def test_variable_source(self):
 	strings = { "ENV.bleh": "ENV",
@@ -58,62 +77,68 @@ class test_config_parser(unittest.TestCase):
 	    self.parser.parse(string, processor=self.loader)
 	    self.assertEqual(env, self.loader.vars_section)
 
-    @with_setup(setup, teardown)
     def test_eval_variables(self):
-	var = 'a'	
-	expressions = { '$var': 'a',
-	                'bleh.$var': 'bleh.a',
-	                '$var.$var': 'a.a',
-			'ENV.$var.bleh': 'ENV.a.bleh',
-	                'ENV.bleh.$var': 'ENV.bleh.a',
-	              }
 
-	self.loader.env_vars = { 'var': 'a' }
+	expressions = { '$var': 'a',
+	                'bleh.$var': None,
+	                'ENV.$var': 'apple',
+			'ENV.$var.bleh': None,
+	                'ENV.$env.$second': 'a',
+	              }
+	self.loader.env_vars['var'] = 'a'
+	self.loader.env_vars['env'] = 'qa'
+	self.loader.env_vars['second'] = 'val'
 
 	for expression, value in expressions.iteritems():
 	    self.parser.parse(expression, processor=self.loader)
 	    self.assertEqual(value, self.loader.value)
 
-    @with_setup(setup, teardown)
     def test_eval_variable_error(self):
-	var = 'a'
 	expressions = { '$unknownvar': 'b', }
 
-	self.loader.env_vars = { 'var': 'a' }
-
-	for expression in expressions:
+	for expression, value in expressions.iteritems():
 	    self.parser.parse(expression, processor=self.loader)
 	    self.assertEqual(None, self.loader.value)
 
     def test_expression_if(self):
-	expressions = [
-	    "ENV.bleh.bleh|www"
-	]
-	for expression in expressions:
+	expressions = {
+	    "ENV.qa.val|www": "a",
+	    "ENV.bleh.bleh|www": "www",
+	}
+	for expression, value in expressions.iteritems():
 	    self.parser.parse(expression, processor=self.loader)
-	    self.assertEqual(expression, self.loader.value)
+	    self.assertEqual(value, self.loader.value)
 
     def test_expression_concat(self):
-	expressions = [
-	    "ENV.bleh.bleh+www"
-	]
-	for expression in expressions:
+	expressions = {
+	    "ENV.production.val+lock": "block",
+	    "ENV.bleh.bleh+www": None,
+	}
+	for expression, value in expressions.iteritems():
 	    self.parser.parse(expression, processor=self.loader)
-	    self.assertEqual(expression, self.loader.value)
+	    self.assertEqual(value, self.loader.value)
+
+    def test_expression_with_eval(self):
+	expressions = { "ENV.$var.bleh|www": "www",
+		        "ENV.$var.val|www" : "a",
+			"ENV.$var.val+cow" : "acow", }	
+	self.loader.env_vars['var'] = 'qa'
+
+	for expression, value in expressions.iteritems():
+	    self.parser.parse(expression, processor=self.loader)
+	    self.assertEqual(value, self.loader.value)
 
     def test_expression_complex(self):
-	expressions = [
-	    "ENV.bleh.bleh|www|blank"
-	]
-	for expression in expressions:
-	    self.parser.parse(expression, processor=self.loader)
-	    self.assertEqual(expression, self.loader.value)
-
-    @with_setup(setup, teardown)
-    def test_expression_with_eval(self):
-	expressions = { "ENV.$var.bleh|www": "ENV.a.bleh|www", }	
-	self.loader.env_vars = { 'var': 'a' }
-
+	expressions = {
+	    "www": "www",
+	    '$var': None,
+	    'ENV.$var': None,
+	    "ENV.qa.not_here|www|blank": "www",
+	    'ENV.qa.not_here|$unknown|blank': "blank",
+	    "ENV.qa.val+duck": "aduck",
+	    "ENV.qa.val|www+duck": "a",
+	    "ENV.qa.not_here|www+duck": "wwwduck",
+	}	
 	for expression, value in expressions.iteritems():
 	    self.parser.parse(expression, processor=self.loader)
 	    self.assertEqual(value, self.loader.value)

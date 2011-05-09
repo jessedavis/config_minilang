@@ -82,16 +82,37 @@ def read_yaml_files(filename):
 		
     return yaml_values	    	
 
+    # mako expirementation - can't seem to get at myfilter correctly
+    # might need to make separate class with myfilter() in it
+#def myfilter(string_to_parse):
+#    parser.parse(string_to_parse, processor=loader)
+#    return loader.value 
+
+class MyFilter():
+
+    loader = None
+    env_vars = None
+    parser = None
+
+    def __init__(self, loader=loader, parser=parser):
+	self.loader = loader
+	self.parser = parser
+
+    def myfilter(self, string):
+	self.parser.parse(string, processor=self.loader)
+	print self.loader.value
+	return self.loader.value
+
 if __name__ == '__main__':
 
-    cli_options = initialize_options("usage: %prog [options] file")
+    cli_options = initialize_options("usage: %prog [options] template_file")
 
     (options, args) = cli_options.parse_args()
     if len(args) != 1:
 	cli_options.error("No file to parse given.")
 
     log = initialize_logging(logger_name=sys.argv[0])
-    
+
     if options.debug:
 	log.setLevel(logging.DEBUG)
     if options.verbose:
@@ -99,8 +120,41 @@ if __name__ == '__main__':
     if options.quiet:
 	log.setLevel(logging.ERROR)
 
+    template_file = args[0]
+    
     yaml_values = read_yaml_files(options.config_file)
+    #yaml_values['env']  = 'iamnotqa'
+    yaml_values['env']  = 'qa'
 
     parser = simpleparse.parser.Parser(config_grammar.config_minilang, 
 	                               'root')
     loader = ConfigLoader(log=log, env_vars=yaml_values)
+
+    # jinja2 expirementation
+    mf = MyFilter(parser=parser, loader=loader)
+
+    from jinja2 import Template, Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader('/home/jdavis/src/svn/site-configs/branches/dev/siteconfig-reorg/web/bfg_web'))
+    env.filters['myfilter'] = mf.myfilter
+    template = env.get_template("us_site_config.yaml")
+
+    print template.render()
+
+    # end jinja2 block
+
+
+
+    # mako expirementation - can't seem to get at myfilter correctly
+    # might need to make separate class with myfilter() in it
+    #from mako.template import Template
+    #from mako import exceptions
+    #import myfilter
+
+    #try: 
+#	mytemplate = Template(filename=template_file,
+#			      default_filters=['myfilter'],
+#			      imports=['import myfilter'])
+#	print mytemplate.render()
+#    except:
+#	print exceptions.text_error_template().render()

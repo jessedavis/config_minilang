@@ -101,7 +101,6 @@ class MyFilter():
 
     def myfilter(self, string):
 	self.parser.parse(string, processor=self.loader)
-	print self.loader.value
 	return self.loader.value
 
 if __name__ == '__main__':

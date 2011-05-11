@@ -188,6 +188,11 @@ class ConfigLoader(DispatchProcessor):
 	self.log.debug(("%s : buffer = %s, (start, end) = (%d, %d), "
 	               "subtree = %s") %
 	               (tag, buffer, left, right, subtree))
+
+	# TODO: may want to inline atom in the grammar (<atom>) and return 
+	# a list, using the construct below seems a litte weird with 
+	# the use of [] in the other rules
+	#return dispatchList(self, subtree, buffer)
 	return dispatch(self, subtree[0], buffer)
 
     def literal(self, parseinfo, buffer):
@@ -195,7 +200,13 @@ class ConfigLoader(DispatchProcessor):
 	self.log.debug(("%s : buffer = %s, (start, end) = (%d, %d), "
 	               "subtree = %s") %
 	               (tag, buffer, left, right, subtree))
-	return dispatch(self, subtree[0], buffer)
+
+	# literal and variable are equal in our grammar, so 
+	# encapsulate the string representing the literal in a list
+	# to allow expressions to just worry about processing lists
+
+	# eat the \ in front of the literal
+	return [ getString((tag, left + 1, right, subtree), buffer) ]
 
     def variable(self, parseinfo, buffer):
 	tag, left, right, subtree = parseinfo

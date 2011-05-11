@@ -113,6 +113,7 @@ class test_config_loader(unittest.TestCase):
 	expressions = {
 	    "ENV.production.val+lock": "block",
 	    "ENV.bleh.bleh+www": None,
+	    '\.+www': '.www',
 	}
 	for expression, value in expressions.iteritems():
 	    self.parser.parse(expression, processor=self.loader)
@@ -138,6 +139,7 @@ class test_config_loader(unittest.TestCase):
 	    "ENV.qa.val+duck": "aduck",
 	    "ENV.qa.val|www+duck": "a",
 	    "ENV.qa.not_here|www+duck": "wwwduck",
+	    "ENV.qa.not_here|www+\.+duck": "www.duck",
 	}	
 	for expression, value in expressions.iteritems():
 	    self.parser.parse(expression, processor=self.loader)

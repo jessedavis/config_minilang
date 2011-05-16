@@ -77,6 +77,12 @@ class test_config_grammar(unittest.TestCase):
 	]
 	self.parse_test_strings(strings, "variable")
 
+    def test_none(self):
+	strings = [
+
+	]
+	self.parse_test_strings(strings, "none")
+
     def test_var(self):
 	strings = [ 
 	    "bleh",

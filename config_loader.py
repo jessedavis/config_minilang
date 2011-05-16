@@ -195,6 +195,13 @@ class ConfigLoader(DispatchProcessor):
 	#return dispatchList(self, subtree, buffer)
 	return dispatch(self, subtree[0], buffer)
 
+    def empty_string(self, parseinfo, buffer):
+	tag, left, right, subtree = parseinfo
+	self.log.debug(("%s : buffer = %s, (start, end) = (%d, %d), "
+	               "subtree = %s") %
+	               (tag, buffer, left, right, subtree))
+	return [ "" ]
+
     def literal(self, parseinfo, buffer):
 	tag, left, right, subtree = parseinfo
 	self.log.debug(("%s : buffer = %s, (start, end) = (%d, %d), "

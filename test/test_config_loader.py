@@ -64,6 +64,10 @@ class test_config_loader(unittest.TestCase):
             "hi": "hi",
             "ENV.a": "apple",
             "ENV.qa.val": "a",
+	    "None": "",
+	    "NONE": "",
+	    "Empty": "",
+	    "EMPTY": "",
 	}
 	for variable, value in variables.iteritems():
 	    self.parser.parse(variable, processor=self.loader)
@@ -104,6 +108,7 @@ class test_config_loader(unittest.TestCase):
 	expressions = {
 	    "ENV.qa.val|www": "a",
 	    "ENV.bleh.bleh|www": "www",
+	    "ENV.bleh.bleh|None": "",
 	}
 	for expression, value in expressions.iteritems():
 	    self.parser.parse(expression, processor=self.loader)
@@ -114,6 +119,7 @@ class test_config_loader(unittest.TestCase):
 	    "ENV.production.val+lock": "block",
 	    "ENV.bleh.bleh+www": None,
 	    '\.+www': '.www',
+	    '\.+None': '.',
 	}
 	for expression, value in expressions.iteritems():
 	    self.parser.parse(expression, processor=self.loader)
@@ -136,6 +142,7 @@ class test_config_loader(unittest.TestCase):
 	    'ENV.$var': None,
 	    "ENV.qa.not_here|www|blank": "www",
 	    'ENV.qa.not_here|$unknown|blank': "blank",
+	    'ENV.qa.not_here|$unknown|Empty': "",
 	    "ENV.qa.val+duck": "aduck",
 	    "ENV.qa.val|www+duck": "a",
 	    "ENV.qa.not_here|www+duck": "wwwduck",

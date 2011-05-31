@@ -62,20 +62,20 @@ Two operators are allowed:
     If the first value can't be defined, use the second.  These can be
     chained.
 
-    Given:
+    <pre><code>
     a: '1',
     b: '2',
-
     $a|$b|c = 1, 2 if a were blank, c if b was also blank.
+    </code></pre>
 
   * \+ - string concatenation
     Join the expressions together.  Can be used for normal strings as 
     well.
 
-    Given:
+    <pre><code>
     a: 'this little ',
-
     $a+'piggy' = 'this little piggy'
+    </code></pre>
 
 Literals are backscaped.  Allowed literals are . (period), $, | and + .
 
@@ -91,13 +91,16 @@ To insert an empty string, use "None", "Empty", "NONE" or "EMPTY".
     file_to_parse.template list_of_variables
 
   * -d | --debug , -v | --verbose , -q | --quiet
+
      Set the log level.
 
   * -f | --cfg_file 
+
      Specify a file that matches tags to files containing the values.
 
      By default, this looks like:
 
+     <pre><code>
      # Each tag to be used as a variable source in ConfigLoader must be 
      # defined here.  If an absolute path is not specified, the current
      # directory is assumed.
@@ -105,6 +108,7 @@ To insert an empty string, use "None", "Empty", "NONE" or "EMPTY".
      [file_locations]
 
      ENV: envs.yaml
+     </code></pre>
 
      This file would be read for a expression starting with ENV, like:
 

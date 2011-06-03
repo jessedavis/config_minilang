@@ -16,6 +16,17 @@ So, shrink the input files that contain the values.  Above all, DRY
 called from other templating engines (for the first iteration of 
 this tool, jinga2 is being used).
 
+## Installation ##
+
+config_minilang requires [PyYAML](http://pyyaml.org) and 
+[Simpleparse](http://simpleparse.sourceforge.net/).  As of this time,
+the helper script is also using [Jinja](http://jinja.pocoo.org/).
+
+On Ubuntu, these can be installed with:
+<pre><code>
+apt-get install python-yaml python-simpleparse python-jinja2
+</code></pre>
+
 ## Examples ##
 
 Given a YAML file, envs.yaml:

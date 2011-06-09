@@ -27,6 +27,11 @@ On Ubuntu, these can be installed with:
 apt-get install python-yaml python-simpleparse python-jinja2
 </code></pre>
 
+Then, just your normal Python install:
+<pre><code>
+python setup.py install
+</code></pre>
+
 ## Examples ##
 
 Given a YAML file, envs.yaml:

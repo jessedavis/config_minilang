@@ -13,8 +13,8 @@ import sys
 import simpleparse
 import yaml
 
-import config_grammar
-from config_loader import ConfigLoader
+from config_minilang import config_grammar
+from config_minilang.config_loader import ConfigLoader
 
 def initialize_logging(logger_name='config_parser'):
     log = logging.getLogger(logger_name)

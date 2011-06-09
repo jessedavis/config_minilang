@@ -17,7 +17,7 @@ from simpleparse.common import strings, numbers
 import sys
 sys.path.insert(0, '..')
 
-import config_grammar
+from config_minilang import config_grammar
 
 class test_config_grammar(unittest.TestCase):
 

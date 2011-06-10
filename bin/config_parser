@@ -69,7 +69,8 @@ def read_yaml_files(filename):
 
     for tag, yaml_file in config.items(config_section):
 	if not yaml_file.startswith(os.sep):
-	    yaml_file = os.path.join(os.getcwd(), yaml_file)
+	    file_dir = os.path.dirname(os.path.realpath(filename))
+	    yaml_file = os.path.join(file_dir, yaml_file)
 
 	try: 
 	    with open(yaml_file) as f:
